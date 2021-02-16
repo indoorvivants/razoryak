@@ -25,10 +25,10 @@ jobs:
           PGP_SECRET: ${{ secrets.PGP_SECRET }}
           SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
           SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
-      - name: Build site
-        run: sbt "docs/run build --destination $(pwd)/_site"
-      - name: Publish gh-pages
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./_site
+      # - name: Build site
+      #   run: sbt "docs/run build --destination $(pwd)/_site"
+      # - name: Publish gh-pages
+      #   uses: peaceiris/actions-gh-pages@v3
+      #   with:
+      #     github_token: ${{ secrets.GITHUB_TOKEN }}
+      #     publish_dir: ./_site
