@@ -1,7 +1,7 @@
-lazy val Version_CE = "3.0.0-RC1"
-lazy val Version_Cats = "2.4.1"
+lazy val Version_CE       = "3.0.0-RC1"
+lazy val Version_Cats     = "2.4.1"
 lazy val Version_Coursier = "2.0.12"
-lazy val Version_Decline = "1.3.0"
+lazy val Version_Decline  = "1.3.0"
 
 lazy val core = project
   .in(file("."))

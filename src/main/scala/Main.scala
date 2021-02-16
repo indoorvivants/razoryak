@@ -26,6 +26,7 @@ import cats.effect._
 import cats.syntax.all._
 import coursier._
 import coursier.complete.Complete
+import coursier.core.Configuration
 import coursier.util.Task
 
 object Main extends IOApp {
@@ -78,6 +79,7 @@ case object NATIVE extends ScalaPlatform
 case object JS     extends ScalaPlatform
 
 case class Config(
+    tests: Boolean,
     log: Boolean,
     org: String,
     name: String,
@@ -87,6 +89,7 @@ case class Config(
 
 object Config {
   import com.monovore.decline._
+  private val testOpt = Opts.flag("tests", "t").orFalse
   private val orgOpt  = Opts.argument[String]("org")
   private val nameOpt = Opts.argument[String]("name")
 
@@ -111,7 +114,7 @@ object Config {
 
   val logOpt = Opts.flag("verbose", "log output", "v").orFalse
   val configOpt =
-    (logOpt, orgOpt, nameOpt, svOpt, platformOpt).mapN(Config.apply)
+    (testOpt, logOpt, orgOpt, nameOpt, svOpt, platformOpt).mapN(Config.apply)
 
   val cmd = Command("razoryak", header = "howdy")(configOpt)
 }
@@ -164,6 +167,8 @@ class RazorYak(cs: CoursierWrap, logger: Logger) {
         ModuleName(completionName(config))
       ),
       ver
+    ).withConfiguration(
+      if (config.tests) Configuration.test else Configuration.empty
     )
   }
 
@@ -246,7 +251,7 @@ class RazorYak(cs: CoursierWrap, logger: Logger) {
       if (base.platform == JS)
         finalModule = finalModule.dropRight("_sjs1".length)
 
-      Some(Config(base.log, org, finalModule, base.scalaVersion, base.platform))
+      Some(base.copy(name = finalModule, org = org))
     } else None
   }
 
