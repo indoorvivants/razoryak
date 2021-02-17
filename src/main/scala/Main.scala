@@ -262,6 +262,9 @@ class RazorYak(cs: CoursierWrap, logger: Logger) {
       if (base.platform == JS && finalModule.endsWith("_sjs1"))
         finalModule = finalModule.dropRight("_sjs1".length)
 
+      if (base.platform == NATIVE && finalModule.endsWith("_native0.4"))
+        finalModule = finalModule.dropRight("_native0.4".length)
+
       Some(base.copy(name = finalModule, org = org))
     } else None
   }
