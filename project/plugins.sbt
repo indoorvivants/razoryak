@@ -12,3 +12,6 @@ addSbtPlugin("ch.epfl.lamp"              % "sbt-dotty"                 % "0.5.2"
 addSbtPlugin(
   "com.indoorvivants" % "subatomic-plugin" % "0.0.5+23-75e6dcab-SNAPSHOT"
 )
+
+addSbtPlugin("org.scalameta" % "sbt-native-image" % "0.3.0")
+

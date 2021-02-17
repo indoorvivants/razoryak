@@ -17,8 +17,10 @@ lazy val core = project
       "org.typelevel"   %% "cats-effect-kernel" % Version_CE,
       "org.typelevel"   %% "cats-effect-std"    % Version_CE,
       "org.typelevel"   %% "cats-kernel"        % Version_Cats
-    )
+    ),
+    Compile / mainClass := Some("razoryak.Main")
   )
+  .enablePlugins(NativeImagePlugin)
 
 val scalafixRules = Seq(
   "OrganizeImports",
