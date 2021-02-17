@@ -180,15 +180,21 @@ class RazorYak(cs: CoursierWrap, logger: Logger) {
       IO(plan).flatMap {
         case _: Exists => IO.pure(ct)
         case NeedsCreation(conf, dependencies) =>
+          val platformSuffix =
+            if (conf.platform == JVM) ""
+            else if (conf.platform == JS)
+              Console.BOLD + " (Scala.js)" + Console.RESET
+            else if (conf.platform == NATIVE)
+              Console.BOLD + " (Scala Native)" + Console.RESET
+
           val action =
-            s"* [ ] you'll need to publish ${conf.name} for ${conf.scalaVersion.raw}"
+            s"* [ ] you'll need to publish ${conf.org}:${conf.name} for ${conf.scalaVersion.raw}$platformSuffix"
           if (dependencies.isEmpty) {
             if (ct.contains(action)) ct.pure[IO]
             else ct.append(action).pure[IO]
           } else {
-            val newCt = if (ct.contains(action)) Chain.empty else Chain(action)
             dependencies
-              .foldLeftM(newCt) { case (c, st) =>
+              .foldLeftM(ct) { case (c, st) =>
                 go(st, c)
               }
               .map(ct => if (ct.contains(action)) ct else ct.append(action))
@@ -220,11 +226,15 @@ class RazorYak(cs: CoursierWrap, logger: Logger) {
           comp._2.toList.reverse match {
             case Nil =>
               ohno(s"$nm doesn't seem to exist :(") *> planShit(config, rf)
+                .map { dependenciesState =>
+                  NeedsCreation(config, Seq(dependenciesState))
+                }
                 .flatTap(st => rf.update(_.updated(config, st)))
             case head :: _ =>
               val result = Exists(config, head)
 
-              rf.update(_.updated(config, result))
+              yay(s"$config exists for version $head!") *> rf
+                .update(_.updated(config, result))
                 .as(result)
           }
 
@@ -239,16 +249,17 @@ class RazorYak(cs: CoursierWrap, logger: Logger) {
     val rawModule = dep.module.name.value
 
     var finalModule = rawModule
+    val ignoreOrgs  = Set("org.scala-js")
 
     if (
       finalModule.endsWith(base.scalaVersion.raw) && !rawModule.contains(
         "scala3-library"
-      )
+      ) && !ignoreOrgs.contains(org)
     ) {
       finalModule =
         finalModule.dropRight(base.scalaVersion.raw.length + 1) // underscore
 
-      if (base.platform == JS)
+      if (base.platform == JS && finalModule.endsWith("_sjs1"))
         finalModule = finalModule.dropRight("_sjs1".length)
 
       Some(base.copy(name = finalModule, org = org))
@@ -265,7 +276,7 @@ class RazorYak(cs: CoursierWrap, logger: Logger) {
         for {
           versions <-
             debug(
-              s"Attempting to check project's dependencies on $previous"
+              s"Attempting to check project's dependencies on $previous (completing using ${completionArtifact(currentConfig)}"
             ) *> cs
               .complete(
                 completionArtifact(currentConfig)

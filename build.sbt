@@ -20,7 +20,12 @@ lazy val razoryak = project
       "org.typelevel"   %% "cats-kernel"        % Version_Cats
     ),
     Compile / mainClass := Some("razoryak.Main"),
-    unusedCompileDependenciesFilter -= moduleFilter("org.scalameta", "svm-subs")
+    unusedCompileDependenciesFilter -= moduleFilter("org.scalameta", "svm-subs"),
+    nativeImageOptions ++= Seq(
+      "--enable-https",
+      "--enable-http",
+      "--no-fallback"
+    )
   )
   .enablePlugins(NativeImagePlugin)
 
