@@ -19,7 +19,8 @@ lazy val razoryak = project
       "org.typelevel"   %% "cats-effect-std"    % Version_CE,
       "org.typelevel"   %% "cats-kernel"        % Version_Cats
     ),
-    Compile / mainClass := Some("razoryak.Main")
+    Compile / mainClass := Some("razoryak.Main"),
+    unusedCompileDependenciesFilter -= moduleFilter("org.scalameta", "svm-subs")
   )
   .enablePlugins(NativeImagePlugin)
 
