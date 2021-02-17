@@ -3,10 +3,11 @@ lazy val Version_Cats     = "2.4.1"
 lazy val Version_Coursier = "2.0.12"
 lazy val Version_Decline  = "1.3.0"
 
-lazy val core = project
+lazy val razoryak = project
   .in(file("."))
   .settings(
     moduleName := "razoryak",
+    name := "razoryak",
     libraryDependencies += "org.typelevel"   %% "cats-effect" % Version_CE,
     libraryDependencies += "org.typelevel"   %% "cats-core"   % Version_Cats,
     libraryDependencies += "io.get-coursier" %% "coursier"    % Version_Coursier,
