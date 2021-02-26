@@ -1,7 +1,9 @@
-lazy val Version_CE       = "3.0.0-RC1"
-lazy val Version_Cats     = "2.4.1"
-lazy val Version_Coursier = "2.0.12"
-lazy val Version_Decline  = "1.3.0"
+lazy val Version_CE        = "3.0.0-RC2"
+lazy val Version_Cats      = "2.4.2"
+lazy val Version_Coursier  = "2.0.12"
+lazy val Version_Decline   = "1.3.0"
+lazy val Version_CatsParse = "0.3.0"
+lazy val Version_Semver4s  = "0.2.0"
 
 lazy val razoryak = project
   .in(file("."))
@@ -10,8 +12,10 @@ lazy val razoryak = project
     name := "razoryak",
     libraryDependencies += "org.typelevel"   %% "cats-effect" % Version_CE,
     libraryDependencies += "org.typelevel"   %% "cats-core"   % Version_Cats,
+    libraryDependencies += "org.typelevel"   %% "cats-parse"  % Version_CatsParse,
     libraryDependencies += "io.get-coursier" %% "coursier"    % Version_Coursier,
     libraryDependencies += "com.monovore"    %% "decline"     % Version_Decline,
+    libraryDependencies += "com.heroestools" %% "semver4s"    % Version_Semver4s,
     libraryDependencies ++= Seq(
       "io.get-coursier" %% "coursier-cache"     % Version_Coursier,
       "io.get-coursier" %% "coursier-core"      % Version_Coursier,
@@ -28,6 +32,14 @@ lazy val razoryak = project
       "--enable-https",
       "--enable-http",
       "--no-fallback"
+    ),
+    nativeImageOptions ++= {
+      Seq("-H:+DashboardAll", "-H:DashboardDump=razoryak-contents").filter(_ =>
+        sys.env.contains("DEBUG_GRAAL")
+      )
+    },
+    addCompilerPlugin(
+      "org.typelevel" %% "kind-projector" % "0.11.3" cross CrossVersion.full
     )
   )
   .enablePlugins(NativeImagePlugin)
