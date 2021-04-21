@@ -27,6 +27,8 @@ sealed abstract class ScalaVersion(val raw: String)
     case Scala213   => Some(Scala212)
     case Scala3_M3  => Some(Scala213)
     case Scala3_RC1 => Some(Scala3_M3)
+    case Scala3_RC2 => Some(Scala3_RC1)
+    case Scala3_RC3 => Some(Scala3_RC2)
   }
 }
 case object Scala211 extends ScalaVersion("2.11")
@@ -35,6 +37,8 @@ case object Scala212   extends ScalaVersion("2.12")
 case object Scala213   extends ScalaVersion("2.13")
 case object Scala3_M3  extends ScalaVersion("3.0.0-M3")
 case object Scala3_RC1 extends ScalaVersion("3.0.0-RC1")
+case object Scala3_RC2 extends ScalaVersion("3.0.0-RC2")
+case object Scala3_RC3 extends ScalaVersion("3.0.0-RC3")
 
 object ScalaVersion {
   def unapply(s: String): Option[ScalaVersion] = s match {
@@ -43,6 +47,8 @@ object ScalaVersion {
     case "2.11"      => Option(Scala211)
     case "3.0.0-M3"  => Option(Scala3_M3)
     case "3.0.0-RC1" => Option(Scala3_RC1)
+    case "3.0.0-RC2" => Option(Scala3_RC2)
+    case "3.0.0-RC3" => Option(Scala3_RC3)
   }
 }
 
