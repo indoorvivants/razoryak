@@ -21,6 +21,13 @@ import cats.implicits._
 
 import com.monovore.decline._
 
+sealed trait CoursierTrack
+object CoursierTrack {
+  case class WriteTo(file: java.io.File)       extends CoursierTrack
+  case class ReproduceFrom(file: java.io.File) extends CoursierTrack
+  case object None                             extends CoursierTrack
+}
+
 case class Config(
     tests: Boolean,
     log: Boolean,
@@ -32,7 +39,8 @@ case class Config(
     allowMinorUpgrades: Boolean,
     allowPatchUpgrades: Boolean,
     allowSnapshots: Boolean,
-    resolvers: List[String]
+    resolvers: List[String],
+    coursierTrack: CoursierTrack
 )
 
 object Config {
@@ -95,6 +103,28 @@ object Config {
   private val platformOpt =
     jsOpt.orElse(nativeOpt).orElse(jvmOpt).withDefault(JVM)
 
+  val trackCoursierOpt = Opts
+    .option[String](
+      "track-coursier",
+      short = "tc",
+      help = "Path to a file where to dump traces of coursier resolution"
+    )
+    .map[CoursierTrack](s => CoursierTrack.WriteTo(new java.io.File(s)))
+
+  val reproduceCoursierOpt = Opts
+    .option[String](
+      "replay-coursier",
+      short = "tc",
+      help = "Path to a file with coursier trace to reproduce"
+    )
+    .map[CoursierTrack](s => CoursierTrack.ReproduceFrom(new java.io.File(s)))
+
+  val coursierTrackOpt =
+    (trackCoursierOpt orElse reproduceCoursierOpt)
+      .withDefault(
+        CoursierTrack.None
+      )
+
   private val logOpt = Opts.flag("verbose", "log output", "v").orFalse
   private val configOpt =
     (
@@ -108,7 +138,8 @@ object Config {
       allowMinorUpgrades,
       allowPatchUpgrades,
       allowSnapshots,
-      resolversOpt
+      resolversOpt,
+      coursierTrackOpt
     ).mapN(Config.apply)
 
   val cmd = Command("razoryak", header = "howdy")(configOpt)

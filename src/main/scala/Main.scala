@@ -24,12 +24,22 @@ object Main extends IOApp {
   def run(args: List[String]) = Config.cmd.parse(args) match {
     case Left(help) =>
       IO.consoleForIO.errorln(help).as(ExitCode.Error)
+
     case Right(config) =>
       val atf = Artifact.fromConfig(config)
 
-      (CoursierWrap.create, Resource.eval(Cache.of[IO, Artifact, Plan]))
-        .mapN(new RazorYakNew(_, _, config, atf, Logger.from[IO](config)))
-        .use(_.run)
+      val coursier = config.coursierTrack match {
+        case CoursierTrack.None => CoursierWrap.create
+        case CoursierTrack.WriteTo(path) =>
+          CoursierWrap.create.flatMap(CoursierWrap.Tracking.toJsonFile(path))
+
+        case CoursierTrack.ReproduceFrom(path) =>
+          CoursierWrap.Tracking.fromJsonFile(path)
+      }
+
+      (coursier, Resource.eval(Cache.of[IO, Artifact, Plan]))
+        .mapN(new RazorYak(_, _, config, atf, Logger.from[IO](config)))
+        .use(_.printPlan)
         .as(ExitCode.Success)
   }
 }

@@ -1,21 +1,26 @@
-lazy val Version_CE        = "3.0.0-RC2"
-lazy val Version_Cats      = "2.4.2"
+lazy val Version_CE        = "3.1.0"
+lazy val Version_Cats      = "2.6.0"
 lazy val Version_Coursier  = "2.0.12"
 lazy val Version_Decline   = "1.3.0"
 lazy val Version_CatsParse = "0.3.0"
 lazy val Version_Semver4s  = "0.2.0"
+lazy val Version_Circe     = "0.14.0-M5"
+lazy val Version_Weaver    = "0.7.1"
 
 lazy val razoryak = project
   .in(file("."))
   .settings(
     moduleName := "razoryak",
     name := "razoryak",
-    libraryDependencies += "org.typelevel"   %% "cats-effect" % Version_CE,
-    libraryDependencies += "org.typelevel"   %% "cats-core"   % Version_Cats,
-    libraryDependencies += "org.typelevel"   %% "cats-parse"  % Version_CatsParse,
-    libraryDependencies += "io.get-coursier" %% "coursier"    % Version_Coursier,
-    libraryDependencies += "com.monovore"    %% "decline"     % Version_Decline,
-    libraryDependencies += "com.heroestools" %% "semver4s"    % Version_Semver4s,
+    libraryDependencies += "org.typelevel"       %% "cats-effect"  % Version_CE,
+    libraryDependencies += "org.typelevel"       %% "cats-core"    % Version_Cats,
+    libraryDependencies += "org.typelevel"       %% "cats-parse"   % Version_CatsParse,
+    libraryDependencies += "io.get-coursier"     %% "coursier"     % Version_Coursier,
+    libraryDependencies += "com.monovore"        %% "decline"      % Version_Decline,
+    libraryDependencies += "com.heroestools"     %% "semver4s"     % Version_Semver4s,
+    libraryDependencies += "io.circe"            %% "circe-core"   % Version_Circe,
+    libraryDependencies += "io.circe"            %% "circe-parser" % Version_Circe,
+    libraryDependencies += "com.disneystreaming" %% "weaver-cats"  % Version_Weaver % Test,
     libraryDependencies ++= Seq(
       "io.get-coursier" %% "coursier-cache"     % Version_Coursier,
       "io.get-coursier" %% "coursier-core"      % Version_Coursier,
@@ -40,7 +45,8 @@ lazy val razoryak = project
     },
     addCompilerPlugin(
       "org.typelevel" %% "kind-projector" % "0.11.3" cross CrossVersion.full
-    )
+    ),
+    testFrameworks += new TestFramework("weaver.framework.CatsEffect")
   )
   .enablePlugins(NativeImagePlugin)
 
@@ -65,10 +71,10 @@ val CICommands = Seq(
 ).mkString(";")
 
 val PrepareCICommands = Seq(
-  s"compile:scalafix --rules $scalafixRules",
-  s"test:scalafix --rules $scalafixRules",
-  "test:scalafmtAll",
-  "compile:scalafmtAll",
+  s"Compile/scalafix --rules $scalafixRules",
+  s"Test/scalafix --rules $scalafixRules",
+  "Test/scalafmtAll",
+  "Compile/scalafmtAll",
   "scalafmtSbt",
   "headerCreate",
   "undeclaredCompileDependenciesTest"
@@ -76,7 +82,7 @@ val PrepareCICommands = Seq(
 
 inThisBuild(
   Seq(
-    scalaVersion := "2.13.4",
+    scalaVersion := "2.13.5",
     semanticdbEnabled := true,
     semanticdbVersion := scalafixSemanticdb.revision,
     scalafixDependencies += "com.github.liancheng" %% "organize-imports" % "0.5.0",

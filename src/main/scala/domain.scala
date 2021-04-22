@@ -68,6 +68,11 @@ case class VersionedArtifact(artifact: Artifact, version: Version) {
   override def toString = artifact.completionArtifact + version.format
 }
 
+object VersionedArtifact {
+  implicit val ordering: Ordering[VersionedArtifact] =
+    Ordering.by(va => (va.artifact, va.version.format))
+}
+
 sealed trait Action extends Product with Serializable
 case class PublishFor(
     artifact: Artifact
@@ -81,7 +86,7 @@ case class Use(artifact: Artifact, version: Version) extends Action
 
 sealed trait Problem                          extends Throwable with Product with Serializable
 case class ArtifactDoesntExist(art: Artifact) extends Problem
-case class NoSuitableVersions(art: Artifact, options: List[Version])
+case class NoSuitableVersions(art: Artifact, options: Seq[Version])
     extends Problem
 
 case class Plan(actions: Vector[Action])
@@ -118,6 +123,9 @@ case class Artifact(
 }
 
 object Artifact {
+
+  implicit val ord: Ordering[Artifact] = Ordering.by(atf => (atf.org, atf.name))
+
   def fromConfig(c: Config) = Artifact(
     tests = c.tests,
     org = c.org,
