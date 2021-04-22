@@ -1,12 +1,15 @@
 name: CI
 on:
   push:
-    branches: ["*"]
+    branches: ["master"]
+    tags: ["v*"]
   pull_request:
     branches: ["*"]
 
+
 jobs:
   build:
+    name: Tests
     strategy:
       fail-fast: false
     runs-on: ubuntu-latest
@@ -16,5 +19,82 @@ jobs:
       - uses: olafurpg/setup-scala@v10
         with:
           java-version: adopt@1.8
+      
       - name: Tests
         run: sbt ci
+
+      - name: Check native image
+        run: sbt razoryak/nativeImage
+
+  release:
+    name: Release
+    needs: [build]
+    if: startsWith(github.ref, 'refs/tags/v') || (github.ref == "refs/heads/master")
+    strategy:
+      fail-fast: false
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: coursier/cache-action@v3      
+      - uses: olafurpg/setup-scala@v10
+        with:
+          java-version: adopt@1.8
+      - run: git fetch --unshallow
+      - name: Publish ${{ github.ref }}
+        run: sbt ci-release
+        env:
+          PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
+          PGP_SECRET: ${{ secrets.PGP_SECRET }}
+          SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
+          SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
+
+  native_image:
+    name: Build native images
+    needs: [build]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macOS-latest, ubuntu-latest, windows-latest]
+        include:
+          - os: macOS-latest
+            uploaded_filename: razoryak-x86_64-apple-darwin
+            local_path: target/native-image/razoryak
+          - os: ubuntu-latest
+            uploaded_filename: razoryak-x86_64-pc-linux
+            local_path: target/native-image/razoryak
+          - os: windows-latest
+            uploaded_filename: razoryak-x86_64-pc-win32.exe
+            local_path: target\native-image\razoryak.exe
+    steps:
+      - uses: actions/checkout@v2
+      - uses: olafurpg/setup-scala@v10
+      - run: git fetch --tags || true
+      - run: sbt razoryak/nativeImage
+        shell: bash
+        if: ${{ matrix.os != 'windows-latest' }}
+      - run: echo $(pwd)
+        shell: bash
+      - name: sbt razoryak/nativeImage (latest windows)
+        shell: cmd
+        if: ${{ matrix.os == 'windows-latest' }}
+        run: >-
+          "C:\Program Files (x86)\Microsoft Visual
+          Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat" && sbt
+          razoryak/nativeImage
+      - uses: actions/upload-artifact@master
+        with:
+          path: ${{ matrix.local_path }}
+          name: ${{ matrix.uploaded_filename }}
+      - name: Upload release
+        if: github.event_name == 'release'
+        uses: actions/upload-release-asset@v1.0.2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: ${{ matrix.local_path }}
+          asset_name: ${{ matrix.uploaded_filename }}
+          asset_content_type: application/zip
+
