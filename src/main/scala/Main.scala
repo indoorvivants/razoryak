@@ -26,8 +26,6 @@ object Main extends IOApp {
       IO.consoleForIO.errorln(help).as(ExitCode.Error)
 
     case Right(config) =>
-      val atf = Artifact.fromConfig(config)
-
       val coursier = config.coursierTrack match {
         case CoursierTrack.None => CoursierWrap.create
         case CoursierTrack.WriteTo(path) =>
@@ -38,7 +36,7 @@ object Main extends IOApp {
       }
 
       (coursier, Resource.eval(Cache.of[IO, Artifact, Plan]))
-        .mapN(new RazorYak(_, _, config, atf, Logger.from[IO](config)))
+        .mapN(new RazorYak(_, _, config, Logger.from[IO](config)))
         .use(_.printPlan)
         .as(ExitCode.Success)
   }

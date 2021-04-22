@@ -26,15 +26,15 @@ trait UpgradeManager {
 }
 
 object UpgradeManager {
-  def fromConfig(config: Config) = new UpgradeManager {
+  def fromConfig(config: UpgradePolicy) = new UpgradeManager {
 
     def acceptable(v: Version) = true
 
     def suitableUpgrade(from: Version, to: Version): Boolean = {
       import config._
-      if (from.major < to.major && !allowMajorUpgrades) false
-      else if (from.minor < to.minor && !allowMinorUpgrades) false
-      else if (from.patch < to.patch && !allowPatchUpgrades) false
+      if (from.major < to.major && !allowMajor) false
+      else if (from.minor < to.minor && !allowMinor) false
+      else if (from.patch < to.patch && !allowPatch) false
       else true
     }
 

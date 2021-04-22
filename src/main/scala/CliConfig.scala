@@ -28,6 +28,27 @@ object CoursierTrack {
   case object None                             extends CoursierTrack
 }
 
+case class UpgradePolicy(
+    allowMajor: Boolean,
+    allowMinor: Boolean,
+    allowPatch: Boolean,
+    allowSnapshots: Boolean
+)
+
+object UpgradePolicy {
+  def noUpgrades = UpgradePolicy(false, false, false, false)
+
+  def allowAll = allowAllStable.copy(allowSnapshots = true)
+  def allowAllStable = UpgradePolicy(
+    allowMajor = true,
+    allowMinor = true,
+    allowPatch = true,
+    allowSnapshots = false
+  )
+
+  def minorAtMost = noUpgrades.copy(allowMinor = true, allowPatch = true)
+}
+
 case class Config(
     tests: Boolean,
     log: Boolean,
@@ -35,12 +56,9 @@ case class Config(
     name: String,
     scalaVersion: ScalaVersion,
     platform: ScalaPlatform,
-    allowMajorUpgrades: Boolean,
-    allowMinorUpgrades: Boolean,
-    allowPatchUpgrades: Boolean,
-    allowSnapshots: Boolean,
     resolvers: List[String],
-    coursierTrack: CoursierTrack
+    coursierTrack: CoursierTrack,
+    upgradePolicy: UpgradePolicy
 )
 
 object Config {
@@ -53,28 +71,38 @@ object Config {
       help =
         "When looking for resolution, consider major upgrades of dependencies (default: false)"
     )
-    .orFalse
+    .orNone
+    .map(_.contains(()))
+
   private val allowMinorUpgrades = Opts
     .flag(
       "allow-minor",
       help =
         "When looking for resolution, consider minor upgrades of dependencies (default: true)"
     )
-    .orTrue
+    .orNone
+    .map(_.contains(()))
   private val allowPatchUpgrades = Opts
     .flag(
       "allow-patch",
       help =
         "When looking for resoltion, consider patch upgrades of dependencies (default: true)"
     )
-    .orTrue
+    .orNone
+    .map(_.contains(()))
   private val allowSnapshots = Opts
     .flag(
       "allow-snapshots",
       help =
-        "When looking for resoltion, consider snapshot versions of dependencies (default: true)"
+        "When looking for resoltion, consider snapshot versions of dependencies (default: false)"
     )
-    .orTrue
+    .orNone
+    .map(_.contains(()))
+
+  private val upgradePolicy =
+    (allowMajorUpgrades, allowMinorUpgrades, allowPatchUpgrades, allowSnapshots)
+      .mapN(UpgradePolicy.apply)
+      .withDefault(UpgradePolicy.minorAtMost)
 
   private val svOpt = Opts
     .option[String]("scala", "Scala version you wish to use")
@@ -106,7 +134,6 @@ object Config {
   val trackCoursierOpt = Opts
     .option[String](
       "track-coursier",
-      short = "tc",
       help = "Path to a file where to dump traces of coursier resolution"
     )
     .map[CoursierTrack](s => CoursierTrack.WriteTo(new java.io.File(s)))
@@ -114,7 +141,6 @@ object Config {
   val reproduceCoursierOpt = Opts
     .option[String](
       "replay-coursier",
-      short = "tc",
       help = "Path to a file with coursier trace to reproduce"
     )
     .map[CoursierTrack](s => CoursierTrack.ReproduceFrom(new java.io.File(s)))
@@ -134,12 +160,9 @@ object Config {
       nameOpt,
       svOpt,
       platformOpt,
-      allowMajorUpgrades,
-      allowMinorUpgrades,
-      allowPatchUpgrades,
-      allowSnapshots,
       resolversOpt,
-      coursierTrackOpt
+      coursierTrackOpt,
+      upgradePolicy
     ).mapN(Config.apply)
 
   val cmd = Command("razoryak", header = "howdy")(configOpt)

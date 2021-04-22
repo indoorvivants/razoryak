@@ -128,9 +128,10 @@ class RazorYak(
     cs: CoursierWrap,
     cache: Cache[IO, Artifact, Plan],
     config: Config,
-    atf: Artifact,
     logger: Logger[IO]
 ) {
+
+  val atf = Artifact.fromConfig(config)
 
   def renderPlan(pl: Plan) = {
     pl.actions
@@ -146,12 +147,9 @@ class RazorYak(
   }
 
   def plan = {
-    val upgradeManager = UpgradeManager.fromConfig(config)
+    val upgradeManager = UpgradeManager.fromConfig(config.upgradePolicy)
     val impl           = new Strategy(logger, cache, cs, upgradeManager)
     impl.plan(atf).map(pl => pl.copy(actions = pl.actions.distinct))
-    // impl.plan(atf).flatMap { plan =>
-    //   renderPlan(plan.copy(actions = plan.actions.distinct)).void
-    // }
   }
 
   def printPlan = plan.flatMap(renderPlan).void

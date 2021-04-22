@@ -22,26 +22,21 @@ trait Setup { self: weaver.IOSuite =>
 
       val log = new Logger[IO](logger.info(_))
 
-      val atf = Artifact.fromConfig(config)
-
       (coursier, Cache.resource[IO, Artifact, Plan])
-        .mapN(new RazorYak(_, _, config, atf, log))
+        .mapN(new RazorYak(_, _, config, log))
         .use(_.plan)
         .map { plan =>
-          val upgrade = plan.actions.collect { case u: UpgradeDependency =>
-            u
+          val use     = Vector.newBuilder[Use]
+          val upgrade = Vector.newBuilder[UpgradeDependency]
+          val publish = Vector.newBuilder[PublishFor]
+
+          plan.actions.foreach {
+            case u: Use               => use.addOne(u)
+            case u: UpgradeDependency => upgrade.addOne(u)
+            case p: PublishFor        => publish.addOne(p)
           }
 
-          val use = plan.actions.collect { case u: Use =>
-            u
-
-          }
-
-          val publishFor = plan.actions.collect { case p: PublishFor =>
-            p
-          }
-
-          (use, upgrade, publishFor)
+          (use.result(), upgrade.result(), publish.result())
         }
         .map(check)
     }
@@ -54,11 +49,8 @@ trait Setup { self: weaver.IOSuite =>
       name = name,
       scalaVersion = scalaVersion,
       platform = JVM,
-      true,
-      true,
-      true,
-      false,
+      upgradePolicy = UpgradePolicy.minorAtMost,
       resolvers = Nil,
-      CoursierTrack.None
+      coursierTrack = CoursierTrack.None
     )
 }
