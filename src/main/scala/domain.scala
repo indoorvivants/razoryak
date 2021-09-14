@@ -29,6 +29,7 @@ sealed abstract class ScalaVersion(val raw: String)
     case Scala3_RC1 => Some(Scala3_M3)
     case Scala3_RC2 => Some(Scala3_RC1)
     case Scala3_RC3 => Some(Scala3_RC2)
+    case Scala3     => Some(Scala3_RC3)
   }
 }
 case object Scala211 extends ScalaVersion("2.11")
@@ -39,6 +40,7 @@ case object Scala3_M3  extends ScalaVersion("3.0.0-M3")
 case object Scala3_RC1 extends ScalaVersion("3.0.0-RC1")
 case object Scala3_RC2 extends ScalaVersion("3.0.0-RC2")
 case object Scala3_RC3 extends ScalaVersion("3.0.0-RC3")
+case object Scala3     extends ScalaVersion("3")
 
 object ScalaVersion {
   def unapply(s: String): Option[ScalaVersion] = s match {
@@ -49,6 +51,12 @@ object ScalaVersion {
     case "3.0.0-RC1" => Option(Scala3_RC1)
     case "3.0.0-RC2" => Option(Scala3_RC2)
     case "3.0.0-RC3" => Option(Scala3_RC3)
+    case "3"         => Option(Scala3)
+    case other =>
+      semver4s.parseVersion(other).toOption.flatMap { v =>
+        if (v.major == 3L) Some(Scala3) else None
+      }
+
   }
 }
 
@@ -84,7 +92,7 @@ case class UpgradeDependency(
 )                                                    extends Action
 case class Use(artifact: Artifact, version: Version) extends Action
 
-sealed trait Problem                          extends Throwable with Product with Serializable
+sealed trait Problem extends Throwable with Product with Serializable
 case class ArtifactDoesntExist(art: Artifact) extends Problem
 case class NoSuitableVersions(art: Artifact, options: Seq[Version])
     extends Problem
@@ -110,6 +118,10 @@ case class Artifact(
 
   def completionArtifact = {
     org + ":" + completionName + ":"
+  }
+
+  def showArtifact = {
+    org + ":" + name
   }
 
   def alternatives: List[Artifact] = {

@@ -62,7 +62,7 @@ trait JsonProtocol {
     Decoder.forProduct4("tests", "org", "name", "axis")(Artifact.apply)
 
   implicit val versionDecoder: Decoder[Version] =
-    Decoder[String].emap(semver4s.version(_).left.map(_.toString))
+    Decoder[String].emap(semver4s.parseVersion(_).left.map(_.toString))
 
   implicit val versionedArtifactDecoder: Decoder[VersionedArtifact] =
     Decoder.forProduct2("artifact", "version")(VersionedArtifact.apply)

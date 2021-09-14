@@ -49,7 +49,7 @@ class Cache[F[_]: Concurrent, K, V] private (
 }
 
 object Cache {
-  sealed trait State[F[_], V]                           extends Product with Serializable
+  sealed trait State[F[_], V] extends Product with Serializable
   case class Computing[F[_], V](result: Deferred[F, V]) extends State[F, V]
   case class Value[F[_], V](result: F[V])               extends State[F, V]
 
