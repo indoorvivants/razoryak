@@ -20,8 +20,6 @@ import java.io.FileWriter
 import scala.concurrent._
 import scala.io.Source
 
-import cats.syntax.all._
-
 import cats.effect._
 
 import coursier._
@@ -39,7 +37,7 @@ trait CoursierWrap {
       artifact: Artifact
   ): IO[Vector[VersionedArtifact]] = {
     complete(artifact.completionArtifact).map(_._2).map { ver =>
-      ver.toVector.map(semver4s.version).collect { case Right(v) =>
+      ver.toVector.map(semver4s.parseVersion(_)).collect { case Right(v) =>
         VersionedArtifact(artifact, v)
       }
     }
@@ -101,7 +99,7 @@ object CoursierWrap {
         base.copy(
           artifact = base.artifact.copy(name = finalModule, org = org),
           version = semver4s
-            .version(dep.version)
+            .parseVersion(dep.version)
             .getOrElse(throw new RuntimeException("what"))
         )
       )

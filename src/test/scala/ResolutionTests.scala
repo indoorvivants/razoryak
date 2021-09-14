@@ -11,4 +11,29 @@ object ResolutionTests extends weaver.SimpleIOSuite with Setup {
       publish.count(_.artifact.name == "metaconfig-core") == publish.size
     )
   }
+
+  resolutionTest(
+    "scala 3 final",
+    basic("com.nrinaudo", "kantan.csv", Scala3),
+    "kantan-3.json"
+  ) { case (_, upgrade, publish) =>
+    expect.all(
+      upgrade.isEmpty
+    ) and
+      exists(publish) { v =>
+        expect.all(
+          v.artifact.name == "kantan.codecs",
+          v.artifact.org == "com.nrinaudo"
+        )
+      } and
+      exists(publish) { v =>
+        expect.all(v.artifact.name == "imp", v.artifact.org == "org.spire-math")
+      } and
+      exists(publish) { v =>
+        expect.all(
+          v.artifact.name == "kantan.csv",
+          v.artifact.org == "com.nrinaudo"
+        )
+      }
+  }
 }
