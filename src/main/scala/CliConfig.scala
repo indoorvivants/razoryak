@@ -119,7 +119,10 @@ object Config {
       .withDefault(UpgradePolicy.minorAtMost)
 
   private val svOpt = Opts
-    .option[String]("scala", "Scala version you wish to use\nExamples: 2.13, 2.12, 3, 3.0.0-RC3")
+    .option[String](
+      "scala",
+      "Scala version you wish to use\nExamples: 2.13, 2.12, 3, 3.0.0-RC3"
+    )
     .mapValidated { sv =>
       ScalaVersion.unapply(sv) match {
         case Some(value) => Validated.valid(value)
