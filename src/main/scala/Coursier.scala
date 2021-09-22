@@ -39,8 +39,11 @@ trait CoursierWrap {
       artifact: Artifact
   ): IO[Vector[VersionedArtifact]] = {
     complete(artifact.completionArtifact).map(_._2).map { ver =>
-      ver.toVector.map(semver4s.parseVersion(_)).collect { case Right(v) =>
-        VersionedArtifact(artifact, v)
+      ver.toVector.map(v => semver4s.parseVersion(v) -> v).collect {
+        case (Right(v), _) =>
+          VersionedArtifact(artifact, ArtifactVersion.Semver(v))
+        case (Left(_), raw) =>
+          VersionedArtifact(artifact, ArtifactVersion.Custom(raw))
       }
     }
   }
@@ -102,7 +105,10 @@ object CoursierWrap {
           artifact = base.artifact.copy(name = finalModule, org = org),
           version = semver4s
             .parseVersion(dep.version)
-            .getOrElse(throw new RuntimeException("what"))
+            .fold(
+              _ => ArtifactVersion.Custom(dep.version),
+              ArtifactVersion.Semver(_)
+            )
         )
       )
     } else None

@@ -16,6 +16,10 @@
 
 package razoryak
 
+import cats.kernel.Order
+
+import razoryak.ArtifactVersion.Custom
+import razoryak.ArtifactVersion.Semver
 import semver4s.Version
 
 sealed abstract class ScalaVersion(val raw: String)
@@ -70,9 +74,32 @@ case class Exists(config: Config, version: String) extends StateOfThings
 case class NeedsCreation(config: Config, dependencies: Seq[StateOfThings])
     extends StateOfThings
 
-case class Axis(scalaVersion: ScalaVersion, platform: ScalaPlatform)
+case class Axis(scalaVersion: ScalaVersion, platform: ScalaPlatform) {
+  def format: String = {
+    val scala = scalaVersion match {
+      case Scala211   => "2.11"
+      case Scala212   => "2.12"
+      case Scala213   => "2.13"
+      case Scala3_M3  => "3.0.0-M3"
+      case Scala3_RC1 => "3.0.0-RC1"
+      case Scala3_RC2 => "3.0.0-RC2"
+      case Scala3_RC3 => "3.0.0-RC3"
+      case Scala3     => "3"
+    }
 
-case class VersionedArtifact(artifact: Artifact, version: Version) {
+    val plat = platform match {
+      case JVM    => "JVM"
+      case NATIVE => "Scala Native"
+      case JS     => "Scala.js"
+    }
+
+    s"Scala $scala on $plat"
+
+  }
+
+}
+
+case class VersionedArtifact(artifact: Artifact, version: ArtifactVersion) {
   override def toString = artifact.completionArtifact + version.format
 }
 
@@ -88,13 +115,35 @@ case class PublishFor(
 case class UpgradeDependency(
     artifact: Artifact,
     dependency: VersionedArtifact,
-    from: Version
-)                                                    extends Action
-case class Use(artifact: Artifact, version: Version) extends Action
+    from: ArtifactVersion
+)                                                            extends Action
+case class Use(artifact: Artifact, version: ArtifactVersion) extends Action
+
+sealed trait ArtifactVersion extends Product with Serializable {
+  def format: String = this match {
+    case Semver(version) => version.format
+    case Custom(s)       => s
+  }
+}
+
+object ArtifactVersion {
+  case class Semver(version: Version) extends ArtifactVersion
+  case class Custom(s: String)        extends ArtifactVersion
+
+  private val ord = cats.Order[Version].toOrdering
+
+  implicit val order: Order[ArtifactVersion] =
+    Order.fromLessThan[ArtifactVersion] {
+      case (Semver(l), Semver(r)) => ord.lt(l, r)
+      case (l, r)                 => l.format < r.format
+    }
+
+  implicit val ordering: Ordering[ArtifactVersion] = order.toOrdering
+}
 
 sealed trait Problem extends Throwable with Product with Serializable
 case class ArtifactDoesntExist(art: Artifact) extends Problem
-case class NoSuitableVersions(art: Artifact, options: Seq[Version])
+case class NoSuitableVersions(art: Artifact, options: Seq[ArtifactVersion])
     extends Problem
 
 case class Plan(actions: Vector[Action])
