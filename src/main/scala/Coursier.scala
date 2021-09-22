@@ -24,6 +24,8 @@ import cats.effect._
 
 import coursier._
 import coursier.complete.Complete
+import coursier.parse.CachePolicyParser
+import coursier.parse.RepositoryParser
 import coursier.util.Task
 
 import io.circe.Decoder
@@ -229,25 +231,50 @@ object CoursierWrap {
     }
   }
 
-  private class Impl(resolve: Resolve[Task], compl: Complete[Task])
-      extends CoursierWrap {
+  private class Impl(
+      resolve: Resolve[Task],
+      compl: Complete[Task]
+  ) extends CoursierWrap {
 
-    override def resolve(artifact: Dependency): IO[Resolution] = fut {
-      implicit ec =>
+    override def resolve(artifact: Dependency): IO[Resolution] =
+      fut { implicit ec =>
         resolve.addDependencies(artifact).future()
-    }
+      }
 
     def complete(inp: String) = fut { implicit ec =>
       compl.withInput(inp).complete().future()
     }
   }
 
-  def create: Resource[IO, CoursierWrap] = {
+  def create(config: CoursierConfig): Resource[IO, CoursierWrap] = {
+    import cats.syntax.all._
     val resources = for {
-      cache  <- IO(coursier.cache.FileCache())
-      resolv <- IO(Resolve(cache))
-      compl  <- IO(Complete(cache))
-    } yield new Impl(resolv, compl)
+      cache <- IO(coursier.cache.FileCache())
+      configuredCache <- config.cacheMethod match {
+        case Some(value) =>
+          IO.fromEither(
+            CachePolicyParser
+              .cachePolicy(value)
+              .leftMap(s => new RuntimeException(s))
+          ).map { policy =>
+            println(policy)
+            cache.withCachePolicies(Seq(policy))
+          }
+        case None => IO.pure(cache)
+      }
+      resolv <- IO(Resolve(configuredCache))
+      compl  <- IO(Complete(configuredCache))
+      repositories <- IO.fromEither(
+        config.resolvers
+          .traverse(r => RepositoryParser.repository(r))
+          .leftMap(new RuntimeException(_))
+      )
+
+      configuredResolve =
+        if (config.disableDefaults) resolv.withRepositories(repositories)
+        else resolv.addRepositories(repositories: _*)
+
+    } yield new Impl(configuredResolve, compl)
 
     Resource.eval(resources)
   }

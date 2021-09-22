@@ -27,9 +27,11 @@ object Main extends IOApp {
 
     case Right(config) =>
       val coursier = config.coursierTrack match {
-        case CoursierTrack.None => CoursierWrap.create
+        case CoursierTrack.None => CoursierWrap.create(config.coursier)
         case CoursierTrack.WriteTo(path) =>
-          CoursierWrap.create.flatMap(CoursierWrap.Tracking.toJsonFile(path))
+          CoursierWrap
+            .create(config.coursier)
+            .flatMap(CoursierWrap.Tracking.toJsonFile(path))
 
         case CoursierTrack.ReproduceFrom(path) =>
           CoursierWrap.Tracking.fromJsonFile(path)

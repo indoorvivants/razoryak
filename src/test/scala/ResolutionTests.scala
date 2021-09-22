@@ -5,10 +5,11 @@ object ResolutionTests extends weaver.SimpleIOSuite with Setup {
     "simple case - just publish the library",
     basic("com.geirsson", "metaconfig-core", Scala3_RC2),
     "metaconfig-3.0.0-RC2.json"
-  ) { case (_, upgrade, publish) =>
-    expect.all(
-      upgrade.isEmpty,
-      publish.count(_.artifact.name == "metaconfig-core") == publish.size
+  ) { plan =>
+    expect(
+      plan.publish.count(
+        _.artifact.name == "metaconfig-core"
+      ) == plan.publish.size
     )
   }
 
@@ -16,24 +17,20 @@ object ResolutionTests extends weaver.SimpleIOSuite with Setup {
     "scala 3 final",
     basic("com.nrinaudo", "kantan.csv", Scala3),
     "kantan-3.json"
-  ) { case (_, upgrade, publish) =>
-    expect.all(
-      upgrade.isEmpty
-    ) and
-      exists(publish) { v =>
-        expect.all(
-          v.artifact.name == "kantan.codecs",
-          v.artifact.org == "com.nrinaudo"
-        )
-      } and
-      exists(publish) { v =>
-        expect.all(v.artifact.name == "imp", v.artifact.org == "org.spire-math")
-      } and
-      exists(publish) { v =>
-        expect.all(
-          v.artifact.name == "kantan.csv",
-          v.artifact.org == "com.nrinaudo"
-        )
-      }
+  ) { plan =>
+    expect(plan.upgrade.isEmpty) and
+      plan.hasPublish("com.nrinaudo", "kantan.codecs") and
+      plan.hasPublish("org.spire-math", "imp") and
+      plan.hasPublish("com.nrinaudo", "kantan.csv")
+  }
+
+  resolutionTest(
+    "attempt to publish self",
+    basic("com.indoorvivants", "razoryak", Scala3),
+    "razoryak-scala3.json"
+  ) { plan =>
+    plan.hasPublish("com.heroestools", "semver4s") and
+      plan.hasUpgrade("com.lihaoyi", "utest") and
+      plan.hasUse("com.monovore", "decline")
   }
 }

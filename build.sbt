@@ -1,5 +1,5 @@
 val Version = new {
-  val CE            = "3.2.8"
+  val CE            = "3.2.9"
   val Cats          = "2.6.1"
   val Coursier      = "2.0.16"
   val Decline       = "2.1.0"
@@ -41,6 +41,7 @@ lazy val razoryak = project
       "--enable-http",
       "--no-fallback"
     ),
+    run / fork := true,
     nativeImageOptions ++= {
       Seq("-H:+DashboardAll", "-H:DashboardDump=razoryak-contents").filter(_ =>
         sys.env.contains("DEBUG_GRAAL")
