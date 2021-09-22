@@ -33,4 +33,15 @@ object ResolutionTests extends weaver.SimpleIOSuite with Setup {
       plan.hasUpgrade("com.lihaoyi", "utest") and
       plan.hasUse("com.monovore", "decline")
   }
+
+  resolutionTest(
+    "handle non-semver version",
+    basic("net.debasishg", "redisclient", Scala3),
+    "redisclient-scala3.json"
+  ) { plan =>
+    plan.hasPublish("net.debasishg", "redisclient") and
+      expect(plan.publish.size == 1) and
+      expect(plan.upgrade.size == 0) and
+      expect(plan.use.size == 0)
+  }
 }
