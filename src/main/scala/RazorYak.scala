@@ -139,7 +139,7 @@ class RazorYak(
         case UpgradeDependency(atf, dep, from) =>
           s"[ ] Upgrade to ${atf.showArtifact}:${dep.version.format} from ${from.format}"
         case Use(artf, version) =>
-          s"[x] Use ${artf.showArtifact}${version.format}"
+          s"[x] Use ${artf.showArtifact}:${version.format}"
         case PublishFor(atf) =>
           s"[ ] Publish ${atf.showArtifact} for ${atf.axis}"
       }

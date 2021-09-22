@@ -119,7 +119,7 @@ object Config {
       .withDefault(UpgradePolicy.minorAtMost)
 
   private val svOpt = Opts
-    .option[String]("scala", "Scala version you wish to use")
+    .option[String]("scala", "Scala version you wish to use\nExamples: 2.13, 2.12, 3, 3.0.0-RC3")
     .mapValidated { sv =>
       ScalaVersion.unapply(sv) match {
         case Some(value) => Validated.valid(value)
@@ -199,12 +199,12 @@ object Config {
 
   val readme =
     s"""
-  | Welcome to razoryak <put version here>
-  | 
-  | To get a test of what this tool does, ask it to upgrade itself to Scala 3:
-  | 
-  | cs launch com.indoorvivants::razoryak:0.0.4 -- com.indoorvivants razoryak --scala 3
-    """.stripMargin.stripMargin(' ')
+  |Welcome to razoryak 
+  |
+  |To get a test of what this tool does, ask it to upgrade itself to Scala 3:
+  |
+  |cs launch com.indoorvivants::razoryak:0.0.4 -- com.indoorvivants razoryak --scala 3
+   """.stripMargin.stripMargin(' ')
 
   val cmd = Command("razoryak", header = readme)(configOpt)
 }
