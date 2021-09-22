@@ -56,10 +56,24 @@ case class Config(
     name: String,
     scalaVersion: ScalaVersion,
     platform: ScalaPlatform,
-    resolvers: List[String],
     coursierTrack: CoursierTrack,
-    upgradePolicy: UpgradePolicy
+    upgradePolicy: UpgradePolicy,
+    coursier: CoursierConfig
 )
+
+case class CoursierConfig(
+    disableDefaults: Boolean,
+    resolvers: Seq[String],
+    cacheMethod: Option[String]
+)
+
+object CoursierConfig {
+  val default = CoursierConfig(
+    disableDefaults = false,
+    resolvers = Seq.empty,
+    cacheMethod = None
+  )
+}
 
 object Config {
   private val testOpt = Opts.flag("tests", "t").orFalse
@@ -120,6 +134,24 @@ object Config {
     )
     .orEmpty
 
+  private val cacheModeOpt = Opts
+    .option[String](
+      "mode",
+      help = "Download mode, passed directly to coursier\n" +
+        "offline|update-changing|update|missing|force\n" + "default is 'missing'"
+    )
+    .orNone
+
+  private val disableDefaultsOpt = Opts
+    .flag(
+      "no-default",
+      help = "Don't add default resolvers (i.e. maven central and ivy2local)"
+    )
+    .orFalse
+
+  val coursierConfig =
+    (disableDefaultsOpt, resolversOpt, cacheModeOpt).mapN(CoursierConfig.apply)
+
   private val jvmOpt =
     Opts.flag("jvm", "search for JVM artifacts").as[ScalaPlatform](JVM)
   private val jsOpt =
@@ -160,10 +192,19 @@ object Config {
       nameOpt,
       svOpt,
       platformOpt,
-      resolversOpt,
       coursierTrackOpt,
-      upgradePolicy
+      upgradePolicy,
+      coursierConfig
     ).mapN(Config.apply)
 
-  val cmd = Command("razoryak", header = "howdy")(configOpt)
+  val readme =
+    s"""
+  | Welcome to razoryak <put version here>
+  | 
+  | To get a test of what this tool does, ask it to upgrade itself to Scala 3:
+  | 
+  | cs launch com.indoorvivants::razoryak:0.0.4 -- com.indoorvivants razoryak --scala 3
+    """.stripMargin.stripMargin(' ')
+
+  val cmd = Command("razoryak", header = readme)(configOpt)
 }

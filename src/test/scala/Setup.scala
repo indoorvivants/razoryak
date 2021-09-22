@@ -7,13 +7,37 @@ import cats.syntax.all._
 import cats.effect._
 
 import weaver.Expectations
+import weaver.SourceLocation
 import weaver.TestName
+
+case class UpgradePlan(
+    use: Vector[Use],
+    upgrade: Vector[UpgradeDependency],
+    publish: Vector[PublishFor]
+) {
+  import Expectations.Helpers._
+  def hasUpgrade(org: String, name: String)(implicit
+      loc: SourceLocation
+  ): Expectations =
+    exists(upgrade)(v =>
+      expect(v.artifact.org == org && v.artifact.name == name)
+    )
+  def hasPublish(org: String, name: String)(implicit
+      loc: SourceLocation
+  ): Expectations =
+    exists(publish)(v =>
+      expect(v.artifact.org == org && v.artifact.name == name)
+    )
+
+  def hasUse(org: String, name: String)(implicit
+      loc: SourceLocation
+  ): Expectations =
+    exists(use)(v => expect(v.artifact.org == org && v.artifact.name == name))
+}
 
 trait Setup { self: weaver.IOSuite =>
   def resolutionTest(name: TestName, config: Config, filename: String)(
-      check: (
-          (Vector[Use], Vector[UpgradeDependency], Vector[PublishFor])
-      ) => Expectations
+      check: UpgradePlan => Expectations
   ) =
     loggedTest(name) { logger =>
       val coursier = CoursierWrap.Tracking.fromJsonFile(
@@ -36,7 +60,7 @@ trait Setup { self: weaver.IOSuite =>
             case p: PublishFor        => publish.addOne(p)
           }
 
-          (use.result(), upgrade.result(), publish.result())
+          UpgradePlan(use.result(), upgrade.result(), publish.result())
         }
         .map(check)
     }
@@ -50,7 +74,7 @@ trait Setup { self: weaver.IOSuite =>
       scalaVersion = scalaVersion,
       platform = JVM,
       upgradePolicy = UpgradePolicy.minorAtMost,
-      resolvers = Nil,
-      coursierTrack = CoursierTrack.None
+      coursierTrack = CoursierTrack.None,
+      coursier = CoursierConfig.default
     )
 }
