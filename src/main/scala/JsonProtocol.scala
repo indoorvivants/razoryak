@@ -45,7 +45,7 @@ trait JsonProtocol {
 
   implicit val versionedArtifactEncoder: Encoder[VersionedArtifact] =
     Encoder.forProduct2("artifact", "version") { va =>
-      (va.artifact, va.version)
+      (va.artifact, va.version.format)
     }
 
   implicit val platformDecode: Decoder[ScalaPlatform] =
@@ -61,8 +61,12 @@ trait JsonProtocol {
   implicit val artifactDecoder: Decoder[Artifact] =
     Decoder.forProduct4("tests", "org", "name", "axis")(Artifact.apply)
 
-  implicit val versionDecoder: Decoder[Version] =
-    Decoder[String].emap(semver4s.parseVersion(_).left.map(_.toString))
+  implicit val versionDecoder: Decoder[ArtifactVersion] =
+    Decoder[String].map(s =>
+      semver4s
+        .parseVersion(s)
+        .fold(_ => ArtifactVersion.Custom(s), ArtifactVersion.Semver(_))
+    )
 
   implicit val versionedArtifactDecoder: Decoder[VersionedArtifact] =
     Decoder.forProduct2("artifact", "version")(VersionedArtifact.apply)

@@ -53,7 +53,10 @@ class Strategy(
 
   def bold(s: Any) = Console.BOLD + s.toString + Console.RESET
 
-  def plan(artifact: Artifact, versionHint: Option[Version] = None): IO[Plan] =
+  def plan(
+      artifact: Artifact,
+      versionHint: Option[ArtifactVersion] = None
+  ): IO[Plan] =
     cache.getOrElse(artifact) {
       cs.getSuggestions(artifact)
         .flatMap {
@@ -141,7 +144,7 @@ class RazorYak(
         case Use(artf, version) =>
           s"[x] Use ${artf.showArtifact}:${version.format}"
         case PublishFor(atf) =>
-          s"[ ] Publish ${atf.showArtifact} for ${atf.axis}"
+          s"[ ] Publish ${atf.showArtifact} for ${atf.axis.format}"
       }
       .traverse(cats.effect.IO.println)
   }

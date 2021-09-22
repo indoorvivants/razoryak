@@ -8,6 +8,9 @@ val Version = new {
   val Circe         = "0.14.1"
   val Weaver        = "0.7.6"
   val KindProjector = "0.13.2"
+
+  val Scala           = "2.13.6"
+  val OrganizeImports = "0.5.0"
 }
 
 lazy val razoryak = project
@@ -86,10 +89,10 @@ val PrepareCICommands = Seq(
 
 inThisBuild(
   Seq(
-    scalaVersion      := "2.13.6",
+    scalaVersion      := Version.Scala,
     semanticdbEnabled := true,
     semanticdbVersion := scalafixSemanticdb.revision,
-    scalafixDependencies += "com.github.liancheng" %% "organize-imports" % "0.5.0",
+    scalafixDependencies += "com.github.liancheng" %% "organize-imports" % Version.OrganizeImports,
     organization     := "com.indoorvivants",
     organizationName := "Anton Sviridov",
     homepage         := Some(url("https://github.com/indoorvivants/razoryak")),

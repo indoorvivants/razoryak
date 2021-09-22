@@ -16,26 +16,28 @@
 
 package razoryak
 
-import semver4s.Version
-
 trait UpgradeManager {
 
-  def acceptable(v: Version): Boolean
+  def acceptable(v: ArtifactVersion): Boolean
 
-  def suitableUpgrade(from: Version, to: Version): Boolean
+  def suitableUpgrade(from: ArtifactVersion, to: ArtifactVersion): Boolean
 }
 
 object UpgradeManager {
   def fromConfig(config: UpgradePolicy) = new UpgradeManager {
 
-    def acceptable(v: Version) = true
+    def acceptable(v: ArtifactVersion) = true
 
-    def suitableUpgrade(from: Version, to: Version): Boolean = {
-      import config._
-      if (from.major < to.major && !allowMajor) false
-      else if (from.minor < to.minor && !allowMinor) false
-      else if (from.patch < to.patch && !allowPatch) false
-      else true
+    def suitableUpgrade(from: ArtifactVersion, to: ArtifactVersion): Boolean = {
+      (from, to) match {
+        case (ArtifactVersion.Semver(from), ArtifactVersion.Semver(to)) =>
+          import config._
+          if (from.major < to.major && !allowMajor) false
+          else if (from.minor < to.minor && !allowMinor) false
+          else if (from.patch < to.patch && !allowPatch) false
+          else true
+        case _ => true // TODO: log that comparison has been skipped
+      }
     }
 
   }
